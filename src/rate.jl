@@ -1,6 +1,20 @@
 abstract type AbstractRate end
 
-# These are different structs introduced to deal with the case where the rate function is constant in between jumps: this are defined through the following type `ConstantRate`. This leads us to treat the case where the user can provide two rate functions, the first one being a `ConstantRate` and a second one `VariableRate` where no a-priori knowledge in infused by the user. These two functions are encapsulated in a `CompositeRate` structure. A composite rate `r::CompositeRate` is called like `r(rate, xc, xd, p, t, issum)`. In this case, the two components of `r` act on the same rate vector `rate` so the indexing of `rate` inside `r.Rcst` and `r.Rvar` should be considered global by the user and not local.
+# NOTE: 2023-08-08 14:10:00 CMT -> comments wrapped
+# These are different structs introduced to deal with the case where the rate 
+# function is constant in between jumps: this are defined through the following 
+# type `ConstantRate`. 
+#
+# This leads us to treat the case where the user can provide two rate functions, 
+# the first one being a `ConstantRate` and a second one `VariableRate` where no 
+# a-priori knowledge in infused by the user. 
+#
+# These two functions are encapsulated in a `CompositeRate` structure. 
+# A composite rate `r::CompositeRate` is called like `r(rate, xc, xd, p, t, issum)`. 
+#
+# In this case, the two components of `r` act on the same rate vector `rate` so
+# the indexing of `rate` inside `r.Rcst` and `r.Rvar` should be considered global
+# by the user and not local.
 
 # this is used to initialise the rate component of the structure `PDMPCaracteristics`. This is useful so that a call to `solve` with identical seed always return the same trajectory
 init!(R::AbstractRate) = nothing

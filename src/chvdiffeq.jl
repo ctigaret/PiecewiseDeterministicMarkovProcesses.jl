@@ -3,12 +3,35 @@ struct CHV{Tode} <: AbstractCHVIterator
 	ode::Tode	# ODE solver to use for the flow in between jumps
 end
 
-function (chv::CHV)(xdot, x, caract::PDMPCaracteristics, t)
+# NOTE: 2023-08-08 13:53:39 CMT 
+# defines a method which updates/mutates xdot based on the calculated rates
+# used as ODEFunction in the definition of the ODEProblem used by `chv_diffeq!`
+function (chv::CHV)(xdot, x, caract::PDMPCaracteristics, t) 
 	tau = x[end]
 	rate = get_tmp(caract.ratecache, x)
-	sr = caract.R(rate, x, caract.xd, caract.parms, tau, true)[1]
-	caract.F(xdot, x, caract.xd, caract.parms, tau)
+	
+	# NOTE: 2023-08-08 13:52:06 CMT
+	# this below, updates (mutates) the rates vector but it is called with sum_rate = true
+	# (last argument) therefore returns the sum of the updated rates vector (all R! functions
+	# must return a tuple which is (sum rates, bound); bound is always 0., but sum_rate is
+	# sum(rate) when last argument is true else, is 0.)
+	#
+	# NOTE: 2023-08-08 22:11:28 CMT
+	# the sum_rate, but also updates (mutates) the rate vector as a side effect!
+	sr = caract.R(rate, x, caract.xd, caract.parms, tau, true)[1] 
+	# NOTE: 2023-08-08 22:11:43 CMT
+	# now, the call to F mutates xdot
+	caract.F(xdot, x, caract.xd, caract.parms, tau) 
+	# NOTE: 2023-08-08 22:12:29 CMT
+	# then augment xdot with 1
 	xdot[end] = 1
+	
+	# NOTE: 2023-08-08 13:54:31 CMT
+	# finally, adjust xdot by dividing each element by sr (sum_rate) -- WHY?
+	# why does this divide ALL elements in xdot by sum(rate) ? 
+	# -> see Veltz 2015 A new twist... paper, equations 3.1, 3.2, 3.3:
+	# sr is Rₜₒₜ(y(s))
+	# NOTE: this happens only at DiscreteCallback execution
 	@inbounds for i in eachindex(xdot)
 		xdot[i] = xdot[i] / sr
 	end
@@ -96,6 +119,9 @@ function chv_diffeq!(problem::PDMPProblem,
 
 	# we declare the characteristics for convenience
 	caract = problem.caract
+	
+	# NOTE: 2023-08-08 13:58:50 CMT
+	# simjptimes is a PDMPJumpTime{Tc, Td}
 	simjptimes = problem.simjptimes
 
 #ISSUE HERE, IF USING A PROBLEM p MAKE SURE THE TIMES in p.sim ARE WELL SET
@@ -114,10 +140,27 @@ function chv_diffeq!(problem::PDMPProblem,
 	X_extended[end] = ti
 
 	# definition of the callback structure passed to DiffEq
+	# NOTE: 2023-08-08 21:30:13 CMT
+	# Is this integrator described in DifferentialEquations manual at
+	# 'Integrator interface' 
+	# (https://docs.sciml.ai/DiffEqDocs/stable/basics/integrator/#integrator)?
 	cb = DiscreteCallback(problem, integrator -> chvjump(integrator, problem, save_positions[1], save_rate, verbose), save_positions = (false, false))
 
 	# define the ODE flow, this leads to big memory saving
+	# NOTE: 2023-08-08 13:49:57 CMT
+	# algopdmp is CHV(ode)'s call method: (chv::CHV)(xdot, x, caract::PDMPCaracteristics, t) 
+	#
+	# general interface is ODEProblem(f, u0, tspan, p) with :
+	# • f = ODEFunction; here this is `algopdmp(xdot, x, caract, tt)`
+	# • u0 = initial condition; here, this is X_extended
+	# • tspan; here it is (0.0, 1e9) for all cases (!!!)
 	prob_CHV = ODEProblem((xdot, x, data, tt) -> algopdmp(xdot, x, caract, tt), X_extended, (0.0, 1e9), kwargs...)
+	
+	# NOTE: 2023-08-08 22:06:36 CMT
+	# initialize the integrator: init(prob, alg; kwargs), where
+	# • prob is an ODEProblem, `prob_CHV`
+	# • alg is the solver, `ode` 
+	# • kwargs are as below...
 	integrator = init(prob_CHV, ode,
 						tstops = simjptimes.tstop_extended,
 						callback = cb,
