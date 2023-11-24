@@ -145,22 +145,31 @@ function chv_diffeq!(problem::PDMPProblem,
 	# 'Integrator interface' 
 	# (https://docs.sciml.ai/DiffEqDocs/stable/basics/integrator/#integrator)?
 	cb = DiscreteCallback(problem, integrator -> chvjump(integrator, problem, save_positions[1], save_rate, verbose), save_positions = (false, false))
-
+	
+	println("xdot: ", xdot)
 	# define the ODE flow, this leads to big memory saving
 	# NOTE: 2023-08-08 13:49:57 CMT
 	# algopdmp is CHV(ode)'s call method: (chv::CHV)(xdot, x, caract::PDMPCaracteristics, t) 
 	#
-	# general interface is ODEProblem(f, u0, tspan, p) with :
+	# general interface is ODEProblem(f, u0, tspan, p, kwargs) with :
 	# • f = ODEFunction; here this is `algopdmp(xdot, x, caract, tt)`
 	# • u0 = initial condition; here, this is X_extended
 	# • tspan; here it is (0.0, 1e9) for all cases (!!!)
+	# • kwargs...
+	#
+	# ⇒ generates an ODEProblem
 	prob_CHV = ODEProblem((xdot, x, data, tt) -> algopdmp(xdot, x, caract, tt), X_extended, (0.0, 1e9), kwargs...)
 	
 	# NOTE: 2023-08-08 22:06:36 CMT
 	# initialize the integrator: init(prob, alg; kwargs), where
-	# • prob is an ODEProblem, `prob_CHV`
+	# • prob is an ODEProblem, `prob_CHV`, see above
 	# • alg is the solver, `ode` 
 	# • kwargs are as below...
+	#
+	# NOTE: BUG Julia 1.9.2 
+	# throws ERROR deep in DiffEqBase/solve.jl: init -> init_up -> 
+	# Sundials/src/common_interface/solve.jl: __init(prob)
+	# apppend!(::Float64, ::Vector{Float64}) - no method matching this
 	integrator = init(prob_CHV, ode,
 						tstops = simjptimes.tstop_extended,
 						callback = cb,
