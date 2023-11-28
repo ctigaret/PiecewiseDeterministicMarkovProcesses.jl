@@ -146,7 +146,7 @@ function chv_diffeq!(problem::PDMPProblem,
 	# (https://docs.sciml.ai/DiffEqDocs/stable/basics/integrator/#integrator)?
 	cb = DiscreteCallback(problem, integrator -> chvjump(integrator, problem, save_positions[1], save_rate, verbose), save_positions = (false, false))
 	
-	println("xdot: ", xdot)
+# 	println("xdot: ", xdot)
 	# define the ODE flow, this leads to big memory saving
 	# NOTE: 2023-08-08 13:49:57 CMT
 	# algopdmp is CHV(ode)'s call method: (chv::CHV)(xdot, x, caract::PDMPCaracteristics, t) 
