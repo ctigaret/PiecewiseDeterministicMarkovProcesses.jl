@@ -158,6 +158,7 @@ function chv_diffeq!(problem::PDMPProblem,
 	# • kwargs...
 	#
 	# ⇒ generates an ODEProblem
+	# algopdmp is actually CHV(ode) with ode = Tsit5() by default
 	prob_CHV = ODEProblem((xdot, x, data, tt) -> algopdmp(xdot, x, caract, tt), X_extended, (0.0, 1e9), kwargs...)
 	
 	# NOTE: 2023-08-08 22:06:36 CMT
