@@ -224,7 +224,7 @@ function chv_diffeq!(problem::PDMPProblem,
 # 						abstol = abstol,
 # 						advance_to_tstop = true)
 
-	# NOTE: 2023-12-03 10:38:51 CMT's attempt to fix
+	# NOTE: 2023-12-03 10:38:51 CMT's attempt to fix the above
 	integrator = init(prob_CHV, ode,
 						tstops = [simjptimes.tstop_extended],
 						callback = cb,
