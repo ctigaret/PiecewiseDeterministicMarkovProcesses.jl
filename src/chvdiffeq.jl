@@ -113,9 +113,26 @@ function chv_diffeq!(problem::PDMPProblem,
 
 	ti, tf = problem.tspan
 	algopdmp = CHV(ode)
+	
+# 	# NOTE: 2023-12-03 10:19:00 CMT
+# 	println("problem BEFORE init!(problem):")
+# 	println(typeof(problem))
+# 	println("\twith fields: ", fieldnames(typeof(problem)))
+# 	println("\tproblem.simjptimes = ", problem.simjptimes)
+# 	# NOTE: 2023-12-03 10:23:44 CMT
+# 	# now, this below is a scalar float (0.0) - shouldn't it be a vector?
+# 	println("\tproblem.simjptimes.tstop_extended = ", problem.simjptimes.tstop_extended)
 
 	# initialise the problem. If I call twice this solve function, it should give the same result...
 	init!(problem)
+	
+# 	println("\nproblem AFTER init!(problem):")
+# 	println(typeof(problem))
+# 	println("\twith fields: ", fieldnames(typeof(problem)))
+# 	println("\tproblem.simjptimes = ", problem.simjptimes)
+	# NOTE: 2023-12-03 10:25:33 CMT
+	# now, this below is still a scalar float but expected by append! (in Sundials' solve) to be a vector
+# 	println("\tproblem.simjptimes.tstop_extended = ", problem.simjptimes.tstop_extended)
 
 	# we declare the characteristics for convenience
 	caract = problem.caract
@@ -161,6 +178,34 @@ function chv_diffeq!(problem::PDMPProblem,
 	# algopdmp is actually CHV(ode) with ode = Tsit5() by default
 	prob_CHV = ODEProblem((xdot, x, data, tt) -> algopdmp(xdot, x, caract, tt), X_extended, (0.0, 1e9), kwargs...)
 	
+	# NOTE: 2023-12-03 10:00:54 CMT
+	# THIS is what is actually passed to DiffEqBase.init
+# 	println("prob_CHV is a: ", typeof(prob_CHV),)
+# 	println("\twith fields: ", fieldnames(typeof(prob_CHV)))
+	
+# 	println("simjptimes is a: ", typeof(simjptimes),)
+# 	println("\twith fields: ", fieldnames(typeof(simjptimes)))
+	
+	# NOTE: 2023-12-03 10:11:01 CMT
+	# tstop_extended should be a vector but turns out it is a float instead ⇒
+	# 	triggers the append! error mentioned below
+	# I guess this comes in the code for PDMPProblem (simjptimes here is actually
+	# a reference to problem.simjptimes)
+# 	println("\n\tsimjptimes.tstop_extended = ", simjptimes.tstop_extended) 
+
+	# NOTE: 2023-12-03 10:26:59 CMT:
+# 	println("\n\t ", typeof(simjptimes.tstop_extended))
+	
+	# NOTE 2023-12-03 10:37:54 CMT
+	# WRONG: simpjptimes.tstop_extended expected a Float64 not a Vector{Float64}
+# 	if isa(simjptimes.tstop_extended, AbstractFloat)
+# 		val = simjptimes.tstop_extended
+# 		println("val: ", typeof(val))
+# 		simjptimes.tstop_extended = [val]
+# 	end
+		
+	
+	
 	# NOTE: 2023-08-08 22:06:36 CMT
 	# initialize the integrator: init(prob, alg; kwargs), where
 	# • prob is an ODEProblem, `prob_CHV`, see above
@@ -171,8 +216,17 @@ function chv_diffeq!(problem::PDMPProblem,
 	# throws ERROR deep in DiffEqBase/solve.jl: init -> init_up -> 
 	# Sundials/src/common_interface/solve.jl: __init(prob)
 	# apppend!(::Float64, ::Vector{Float64}) - no method matching this
+# 	integrator = init(prob_CHV, ode,
+# 						tstops = simjptimes.tstop_extended,
+# 						callback = cb,
+# 						save_everystep = false,
+# 						reltol = reltol,
+# 						abstol = abstol,
+# 						advance_to_tstop = true)
+
+	# NOTE: 2023-12-03 10:38:51 CMT's attempt to fix
 	integrator = init(prob_CHV, ode,
-						tstops = simjptimes.tstop_extended,
+						tstops = [simjptimes.tstop_extended],
 						callback = cb,
 						save_everystep = false,
 						reltol = reltol,
