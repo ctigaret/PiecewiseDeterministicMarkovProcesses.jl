@@ -17,7 +17,7 @@ function (chv::CHV)(xdot, x, caract::PDMPCaracteristics, t)
 	# sum(rate) when last argument is true else, is 0.)
 	#
 	# NOTE: 2023-08-08 22:11:28 CMT
-	# the sum_rate, but also updates (mutates) the rate vector as a side effect!
+	# calculates the sum_rate, but also updates (mutates) the rate vector as a side effect!
 	sr = caract.R(rate, x, caract.xd, caract.parms, tau, true)[1] 
 	# NOTE: 2023-08-08 22:11:43 CMT
 	# now, the call to F mutates xdot
