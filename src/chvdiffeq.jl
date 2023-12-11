@@ -42,8 +42,11 @@ end
 ### implementation of the CHV algo using DiffEq
 # the following does not allocate
 
-# The following function is a callback to discrete jump. Its role is to perform the jump on the solution given by the ODE solver
-# callable struct
+# The following function is a callback to discrete jump. Its role is to perform 
+# the jump on the solution given by the ODE solver 
+# callable struct # NOTE: 2023-12-11 22:52:24 comments wrapped by CMT
+
+
 function chvjump(integrator, prob::PDMPProblem, save_pre_jump, save_rate, verbose)
 	# we declare the characteristics for convenience
 	caract = prob.caract

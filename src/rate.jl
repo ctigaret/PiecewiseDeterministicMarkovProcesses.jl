@@ -16,7 +16,10 @@ abstract type AbstractRate end
 # the indexing of `rate` inside `r.Rcst` and `r.Rvar` should be considered global
 # by the user and not local.
 
-# this is used to initialise the rate component of the structure `PDMPCaracteristics`. This is useful so that a call to `solve` with identical seed always return the same trajectory
+# this is used to initialise the rate component of the structure 
+# `PDMPCaracteristics`. This is useful so that a call to `solve` with identical 
+# seed always return the same trajectory 
+#
 init!(R::AbstractRate) = nothing
 
 struct VariableRate{TR} <: AbstractRate
@@ -27,7 +30,14 @@ function (vr::VariableRate)(rate, xc, xd, p, t, issum)
 	return vr.R(rate, xc, xd, p, t, issum)
 end
 
-# Structure meant to deal with rate functions which are constant in between jumps. The only way the rate function can change is when `xd` changes. Hence, while c::ConstantRate is called like `c(rate, xc, xd, p, t, true)`, it returns `c.totalrate`. In the codes CHV and Rejection, a call to `c(rate, xc, xd, p, t, false)` that a jump has occurred and one wants to (possibly) change `xd`. We use this call to trigger the update of `c.totalrate`. This update is also triggered whenever `c.totalrate < 0` like for initialisation purposes.
+# Structure meant to deal with rate functions which are constant in between 
+# jumps. The only way the rate function can change is when `xd` changes. Hence, 
+# while c::ConstantRate is called like `c(rate, xc, xd, p, t, true)`, it returns 
+# `c.totalrate`. In the codes CHV and Rejection, a call to `c(rate, xc, xd, p, t, 
+# false)` that a jump has occurred and one wants to (possibly) change `xd`. We use 
+# this call to trigger the update of `c.totalrate`. This update is also triggered 
+# whenever `c.totalrate < 0` like for initialisation purposes. 
+#
 mutable struct ConstantRate{TR} <: AbstractRate
 	R::TR
 	totalrate::Float64
